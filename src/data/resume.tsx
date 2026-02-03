@@ -216,13 +216,13 @@ export const DATA = {
         "Docker",
         "MLOps",
       ],
-      // links: [
-      //   {
-      //     type: "Website",
-      //     href: "https://chatcollect.com",
-      //     icon: <Icons.globe className="size-3" />,
-      //   },
-      // ],
+      links: [
+        {
+          type: "Source",
+          href: "https://github.com/Devharal/DenseNet-Optimization-MLOps-Kubernetes",
+          icon: <Icons.github className="size-3" />,
+        },
+      ],
       image: "",
       video:
         "screen-capture.mp4",
