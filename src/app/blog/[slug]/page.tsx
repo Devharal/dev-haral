@@ -132,9 +132,25 @@ export default async function Blog({
         <h1 className="title font-semibold text-3xl md:text-4xl tracking-tighter leading-tight">
           {post.title}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          {formatDate(post.publishedAt)}
-        </p>
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground">
+            {formatDate(post.publishedAt)}
+          </p>
+          {post.author && (
+            <div className="flex items-center gap-3">
+              {post.image && (
+                <img
+                  src={post.image}
+                  alt={post.author}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              )}
+              <div>
+                <p className="text-sm font-medium">{post.author}</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <div className="my-6 flex w-full items-center">
         <div

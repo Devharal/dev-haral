@@ -1,33 +1,339 @@
 ---
-title: "REST API Design Principles That Stand the Test of Time"
-publishedAt: "2024-12-12"
-updatedAt: "2024-12-12"
-author: "John Doe"
-summary: "Learn how to design APIs that developers love to use and are easy to maintain."
-image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=192&fit=crop"
+title: "Docker From Zero to AWS Deployment"
+publishedAt: "2025-12-12"
+updatedAt: "2025-12-12"
+author: "Dev Haral"
+summary: "A beginner-to-advanced guide that teaches Docker from absolute basics to deploying production-ready Docker images on AWS."
+image: "https://avatars.githubusercontent.com/u/90788942?v=4"
 ---
 
-# REST API Design Principles That Stand the Test of Time
 
-Great APIs feel boring in the best way: predictable, consistent, and easy to reason about. When the surface area is simple, teams ship faster and clients break less often.
+Docker feels scary until it suddenly becomes obvious — and once it does, you’ll never want to deploy apps without it.
 
-This is a lightweight checklist you can keep in mind while designing new endpoints or reviewing an existing API.
+This MDX guide starts from **absolute zero** and ends with **deploying a Docker image on AWS (ECR + ECS/Fargate)**. No prior container knowledge assumed.
 
-## Core principles
+---
 
-- Use clear, consistent **resource names** (think nouns).
-- Keep behavior aligned with **HTTP semantics** (read vs write).
-- Return **consistent response shapes** so clients don’t guess.
-- Prefer **sane defaults** with optional query parameters for filtering/sorting.
+## Why Docker Exists (The Real Problem)
 
-## A simple checklist
+Before Docker, deployment usually meant:
 
-1. Pick stable resource paths (plural nouns are a common convention).
-2. Use a small set of status codes consistently.
-3. Document pagination and what “next/previous” means.
-4. Be explicit about authentication and authorization requirements.
-5. Add brief examples in docs for the “happy path” and common errors.
+- “It works on my machine” disasters
+- Manual dependency installation on servers
+- OS, runtime, and library mismatches
+- Slow onboarding for new developers
 
-## Wrap-up
+Docker solves this with one idea:
 
-If you optimize for consistency first, your API will be easier to document, easier to test, and easier for others to adopt.
+> Package the application **and everything it needs to run** — together.
+
+---
+
+## What Is Docker?
+
+Docker is a **containerization platform**.
+
+A **container** is a lightweight, isolated runtime environment that:
+
+- Runs your application
+- Includes all dependencies
+- Behaves the same everywhere
+
+---
+
+## Containers vs Virtual Machines
+
+
+
+| Virtual Machines | Containers |
+|------------------|------------|
+| Heavy | Lightweight |
+| Full OS per VM | Share host OS |
+| Slow boot | Instant startup |
+| High resource usage | Efficient |
+
+---
+
+## Core Docker Concepts
+
+### Docker Image
+
+An **image** is a blueprint:
+
+- Base OS
+- Runtime (Node, Python, Java, etc.)
+- Dependencies
+- Application code
+
+Images are **immutable**.
+
+---
+
+### Docker Container
+
+A **container** is a running instance of an image.
+
+> Image = Class  
+> Container = Object
+
+---
+
+### Dockerfile
+
+A **Dockerfile** defines how to build an image.
+
+Think of it as a recipe.
+
+---
+
+## Installing Docker
+
+Install Docker Desktop:
+
+- https://www.docker.com/products/docker-desktop/
+
+Verify:
+
+```bash
+docker --version
+docker run hello-world
+```
+
+---
+
+## Running Your First Container
+
+```bash
+docker run nginx
+```
+
+Expose it locally:
+
+```bash
+docker run -p 8080:80 nginx
+```
+
+Visit: `http://localhost:8080`
+
+---
+
+## Docker Hub (Image Registry)
+
+<MediaContainer
+  type="image"
+  src="https://topdev.vn/blog/wp-content/uploads/2019/05/docker.png"
+  alt="Containers vs Virtual Machines"
+/>
+
+Docker Hub is a public image registry — like npm for containers.
+
+```bash
+docker pull node:18
+docker pull python:3.11
+docker pull redis
+```
+
+---
+
+## Creating Your First Dockerfile (Node.js)
+
+**Project structure**
+
+```text
+app/
+ ├─ index.js
+ ├─ package.json
+ └─ Dockerfile
+```
+
+**index.js**
+
+```js
+const express = require("express");
+const app = express();
+
+app.get("/", (req, res) => res.send("Hello from Docker"));
+
+app.listen(3000, () => console.log("Running on 3000"));
+```
+
+**Dockerfile**
+
+```text
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+CMD ["node", "index.js"]
+```
+
+---
+
+## Build & Run Your Image
+
+```bash
+docker build -t my-node-app .
+docker run -p 3000:3000 my-node-app
+```
+
+---
+
+## Docker Architecture (How Docker Works)
+
+<MediaContainer
+  type="image"
+  src="https://images.unsplash.com/photo-1618477247222-acbdb0e159b3?w=1200&fit=crop"
+  alt="Docker Architecture"
+/>
+
+- Docker Client (CLI)
+- Docker Daemon
+- Images
+- Containers
+- Registries
+
+---
+
+## Managing Containers
+
+```bash
+docker ps
+docker stop <id>
+docker rm <id>
+docker images
+docker rmi <id>
+```
+
+---
+
+## Environment Variables
+
+```bash
+docker run -e NODE_ENV=production my-node-app
+```
+
+In Dockerfile:
+
+```text
+ENV NODE_ENV=production
+```
+
+---
+
+## Docker Volumes (Persistence)
+
+Containers are ephemeral.
+
+```bash
+docker volume create appdata
+docker run -v appdata:/app/data my-node-app
+```
+
+---
+
+## Docker Compose (Multiple Services)
+
+```yaml
+version: "3.8"
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7
+```
+
+```bash
+docker-compose up
+```
+
+---
+
+## Preparing for AWS Deployment
+
+You need:
+
+- Docker image
+- Image registry
+
+AWS choice:
+
+- Amazon ECR (Elastic Container Registry)
+
+---
+
+## Push Image to Amazon ECR
+
+<MediaContainer
+  type="image"
+  src="https://usercontent.one/wp/collabnix.com/wp-content/uploads/2024/09/Screenshot-from-2024-09-12-15-37-21.png?media=1736482966"
+  alt="AWS ECR"
+/>
+
+```bash
+aws ecr get-login-password --region us-east-1 \
+| docker login --username AWS --password-stdin <account>.dkr.ecr.us-east-1.amazonaws.com
+
+docker tag my-node-app:latest <repo-url>:latest
+docker push <repo-url>:latest
+```
+
+---
+
+## Deploying with ECS + Fargate
+
+<MediaContainer
+  type="image"
+  src="https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1200&fit=crop"
+  alt="AWS ECS Architecture"
+/>
+
+Flow:
+
+1. ECS Cluster
+2. Task Definition (Docker image)
+3. Service
+4. Load Balancer
+
+No servers to manage.
+
+---
+
+## Production Best Practices
+
+- Multi-stage builds
+- Small images
+- `.dockerignore`
+- No secrets in images
+- Health checks
+
+---
+
+## Final Mental Model
+
+> **Build once. Run anywhere.**
+
+Same Docker image from laptop → staging → AWS production.
+
+---
+
+## Wrap Up
+
+If you understand:
+
+- Images vs containers
+- Dockerfile basics
+- Registries (ECR)
+- ECS deployment
+
+You already know most of Docker used in real-world systems 🚀

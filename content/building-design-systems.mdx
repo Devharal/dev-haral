@@ -1,146 +1,254 @@
 ---
-title: "Building Scalable Design Systems with React and Tailwind"
-publishedAt: "2024-12-01"
-updatedAt: "2024-12-01"
-author: "John Doe"
-summary: "A comprehensive guide to creating maintainable design systems that scale with your team and product."
-image: "https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=800&h=192&fit=crop"
+title: "Kubernetes From Zero to Production Deployment"
+publishedAt: "2025-12-18"
+updatedAt: "2025-12-18"
+author: "Dev Haral"
+summary: "A beginner-to-advanced guide that teaches Kubernetes from absolute basics to deploying production-ready workloads on AWS EKS."
+image: "https://avatars.githubusercontent.com/u/90788942?v=4"
 ---
 
-Design systems are the backbone of consistent user interfaces. Here's how to build one that scales.
+Kubernetes looks terrifying — YAML everywhere, weird names, too many concepts.
+But once the mental model clicks, Kubernetes becomes the most powerful deployment system you’ll ever use.
 
-## Why Design Systems Matter
+This guide starts from absolute zero and ends with deploying a production-ready app on AWS EKS.
+No prior Kubernetes knowledge assumed.
 
-A well-crafted design system provides:
+---
+## Why Kubernetes Exists (The Real Problem)
 
-- **Consistency** across all products
-- **Faster development** with reusable components
-- **Better collaboration** between designers and developers
-- **Reduced technical debt** over time
+Docker solved packaging.
+But teams quickly hit new problems:
 
-## Core Principles
+- How do we run hundreds of containers?
+- What if a container crashes?
+- How do we scale traffic automatically?
+- How do services discover each other?
+- How do we deploy with zero downtime?
 
-### 1. Start with Tokens
+Kubernetes answers all of this.
 
-Design tokens are the atomic values of your system:
+> Kubernetes is an operating system for containers.
 
-```typescript title="tokens.ts"
-export const tokens = {
-  colors: {
-    primary: {
-      50: '#eff6ff',
-      500: '#3b82f6',
-      900: '#1e3a8a',
-    },
-    neutral: {
-      0: '#ffffff',
-      100: '#f5f5f5',
-      900: '#171717',
-    },
-  },
-  spacing: {
-    xs: '0.25rem',
-    sm: '0.5rem',
-    md: '1rem',
-    lg: '1.5rem',
-    xl: '2rem',
-  },
-  radii: {
-    sm: '0.25rem',
-    md: '0.5rem',
-    lg: '1rem',
-    full: '9999px',
-  },
-} as const;
+---
+## What Is Kubernetes?
+
+Kubernetes (K8s) is a container orchestration platform that:
+
+- Runs Docker containers
+- Manages scaling and healing
+- Handles networking and load balancing
+- Enables declarative deployments
+
+You tell Kubernetes what you want.
+It continuously works to keep reality matching your intent.
+
+---
+## Core Kubernetes Architecture
+
+- Control Plane: API Server, Scheduler, Controller Manager, etcd
+- Worker Nodes: kubelet, container runtime, Pods
+
+---
+## Kubernetes Mental Model
+
+Pod = smallest deployable unit  
+Deployment = manages Pods  
+Service = stable networking  
+Ingress = external HTTP access  
+ConfigMap = non-secret config  
+Secret = sensitive data  
+HPA = auto scaling  
+
+---
+## Installing Kubernetes Locally (Minikube)
+
+```bash
+curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+minikube start
+kubectl get nodes
 ```
 
-### 2. Build Primitive Components
+---
+## Demo App (Node.js)
 
-Start with the basics:
+```js
+const express = require("express");
+const app = express();
 
-```tsx title="Button.tsx"
-import { cva, type VariantProps } from "class-variance-authority";
+app.get("/", (req, res) => res.send("Hello from Kubernetes 🚀"));
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-md font-medium transition-colors",
-  {
-    variants: {
-      variant: {
-        primary: "bg-primary text-white hover:bg-primary/90",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-      },
-      size: {
-        sm: "h-8 px-3 text-sm",
-        md: "h-10 px-4",
-        lg: "h-12 px-6 text-lg",
-      },
-    },
-    defaultVariants: {
-      variant: "primary",
-      size: "md",
-    },
-  }
-);
-
-interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
-
-export function Button({ variant, size, className, ...props }: ButtonProps) {
-  return (
-    <button className={buttonVariants({ variant, size, className })} {...props} />
-  );
-}
+app.listen(3000, () => console.log("Running on port 3000"));
 ```
 
-## Component Composition
+---
+## Dockerfile
 
-Build complex components from primitives:
-
-| Level | Examples | Purpose |
-|-------|----------|---------|
-| Tokens | Colors, spacing, typography | Foundation |
-| Primitives | Button, Input, Badge | Building blocks |
-| Patterns | Card, Modal, Dropdown | Common UI patterns |
-| Templates | PageHeader, Sidebar | Layout structures |
-
-## Documentation is Key
-
-> "A design system without documentation is just a component library."
-
-Every component should include:
-
-1. **Usage examples** - Show common use cases
-2. **Props documentation** - Explain all options
-3. **Accessibility notes** - ARIA labels, keyboard nav
-4. **Do's and Don'ts** - Guide proper usage
-
-## Versioning Strategy
-
-```json title="package.json"
-{
-  "name": "@company/design-system",
-  "version": "2.1.0",
-  "peerDependencies": {
-    "react": "^18.0.0",
-    "tailwindcss": "^3.0.0"
-  }
-}
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+EXPOSE 3000
+CMD ["node", "index.js"]
 ```
 
-Use semantic versioning:
-- **Major**: Breaking changes
-- **Minor**: New features (backward compatible)
-- **Patch**: Bug fixes
+---
+## Kubernetes Deployment
 
-## Conclusion
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: app
+          image: my-k8s-app
+          ports:
+            - containerPort: 3000
+```
 
-Building a design system is an investment that pays dividends in:
+---
+## Service
 
-- Developer productivity
-- Design consistency
-- User experience
-- Team collaboration
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+spec:
+  selector:
+    app: my-app
+  ports:
+    - port: 80
+      targetPort: 3000
+  type: ClusterIP
+```
 
-Start small, iterate often, and document everything.
+---
+## Ingress
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-app-ingress
+spec:
+  rules:
+    - host: myapp.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-app-service
+                port:
+                  number: 80
+```
+
+---
+## ConfigMap
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  NODE_ENV: production
+```
+
+---
+## Secret
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+type: Opaque
+data:
+  DB_PASSWORD: cGFzc3dvcmQ=
+```
+
+---
+## Health Checks
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /
+    port: 3000
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 3000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+```
+
+---
+## Horizontal Pod Autoscaler
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: my-app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: my-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+```
+
+---
+## AWS EKS Deployment
+
+```bash
+aws eks create-cluster --name my-cluster
+aws eks update-kubeconfig --name my-cluster
+kubectl apply -f k8s/
+```
+
+---
+## Final Mental Model
+
+Build once. Run anywhere.
+
+Laptop → Minikube → AWS EKS
+
+---
+## Wrap Up
+
+If you understand Pods, Deployments, Services, Ingress, ConfigMaps, Secrets, HPA, and EKS,
+you already know real-world Kubernetes.
